@@ -1,0 +1,3 @@
+three.js r186 (npm three@0.186.1), licenza MIT.
+File minificati con esbuild da node_modules/three/build/{three.core.js,three.module.js}.
+Per aggiornare: npm install --no-save three esbuild, poi ripetere la minificazione.
