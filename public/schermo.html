@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>La Valle di Brumavera</title>
+    <link rel="stylesheet" href="/css/stile.css" />
+  </head>
+  <body class="schermo">
+    <div id="banner" class="banner" role="status" hidden>Connessione persa. Riconnessione in corso...</div>
+
+    <main>
+      <!-- 0. Caricamento -->
+      <section id="sc-caricamento" class="schermata" aria-live="polite">
+        <p class="piccolo">Un momento...</p>
+      </section>
+
+      <!-- A. Scelta del numero di giocatori -->
+      <section id="sc-giocatori" class="schermata" hidden>
+        <h1 class="titolo">La Valle di Brumavera</h1>
+        <h2 class="sottotitolo">Scegli il numero di giocatori</h2>
+        <div class="numeri" role="group" aria-label="Numero di giocatori">
+          <button type="button" class="pulsante" data-n="1">1</button>
+          <button type="button" class="pulsante" data-n="2">2</button>
+          <button type="button" class="pulsante" data-n="3">3</button>
+          <button type="button" class="pulsante" data-n="4">4</button>
+        </div>
+        <p id="errore-creazione" class="errore" role="alert" hidden></p>
+        <p class="suggerimento-fisso">Premi F per lo schermo intero</p>
+      </section>
+
+      <!-- B. Sala d'attesa: QR code e codice -->
+      <section id="sc-lobby" class="schermata" hidden>
+        <h2 class="sottotitolo">Collegate i telefoni</h2>
+        <div class="lobby">
+          <img id="qr" class="qr" alt="QR code per collegare il telefono" width="440" height="440" />
+          <div class="istruzioni">
+            <p id="testo-ingresso">Inquadra il QR con la fotocamera del telefono.</p>
+            <p id="testo-indirizzo">Se il QR non funziona, apri questo indirizzo sul telefono e scrivi il codice:</p>
+            <p id="indirizzo" class="indirizzo"></p>
+            <p id="codice" class="codice" aria-label="Codice stanza"></p>
+          </div>
+        </div>
+        <ul id="slot-lobby" class="giocatori"></ul>
+      </section>
+
+      <!-- C + D. Creazione dei personaggi e pulsante PRONTO -->
+      <section id="sc-creazione" class="schermata" hidden>
+        <h2 class="sottotitolo">Scegli il tuo personaggio</h2>
+        <p class="piccolo">Guarda il telefono</p>
+        <ul id="slot-creazione" class="giocatori"></ul>
+        <button type="button" id="pronto" class="pulsante pulsante-pronto" hidden>PRONTO</button>
+      </section>
+
+      <!-- E + F + G. La storia -->
+      <section id="sc-storia" class="schermata" hidden>
+        <div id="contenuto-storia" class="contenuto-storia" aria-live="polite"></div>
+        <div id="barra-scelta" class="barra-scelta" hidden>
+          <span class="invito">Fate la vostra scelta</span>
+          <span id="turno" class="turno"></span>
+        </div>
+        <p id="suggerimento" class="suggerimento-fisso">Clic o Spazio per continuare</p>
+      </section>
+
+      <!-- H. Fine -->
+      <section id="sc-fine" class="schermata" hidden>
+        <h1 class="titolo">FINE</h1>
+        <p class="sottotitolo">Grazie per aver giocato</p>
+        <button type="button" id="rigioca" class="pulsante">Gioca di nuovo</button>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/js/schermo.js"></script>
+  </body>
+</html>

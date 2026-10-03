@@ -1,0 +1,24 @@
+{
+  "name": "brumavera",
+  "version": "0.1.0",
+  "private": true,
+  "description": "La Valle di Brumavera - gioco di avventura cooperativo: il computer è lo schermo, i telefoni sono i controller.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1",
+    "socket.io-client": "^4.8.4"
+  }
+}

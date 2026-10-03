@@ -1,0 +1,651 @@
+/* ==========================================================================
+   Brumavera - stile
+   Due mondi: lo SCHERMO del computer (nero e bianco, come chiesto)
+   e il TELEFONO (notte di montagna, con una scheda personaggio in ottone).
+   Nessun font esterno: funziona anche senza internet.
+   ========================================================================== */
+
+:root {
+  --notte: #1b2838;
+  --roccia: #26384d;
+  --bordo: #3d536b;
+  --nebbia: #eaf0f4;
+  --nebbia-spenta: #a9b8c6;
+  --ottone: #c9a24d;
+  --muschio: #6b9b78;
+  --errore: #f2a0a0;
+  --serif: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Times New Roman', serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--serif);
+  line-height: 1.5;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ottone);
+  outline-offset: 3px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes dissolvenza {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   SCHERMO DEL COMPUTER: nero, testo bianco, molto grande
+   ========================================================================== */
+
+body.schermo {
+  background: #000;
+  color: #fff;
+}
+
+body.schermo :focus-visible {
+  outline-color: #fff;
+}
+
+.schermo .schermata {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 4vh 5vw;
+  text-align: center;
+}
+
+.schermo .titolo {
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 5.5rem);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+.schermo .sottotitolo {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2.6rem);
+  font-weight: 400;
+  color: #d8d8d8;
+}
+
+.schermo .piccolo {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #9a9a9a;
+}
+
+.schermo .errore {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #ffb3b3;
+}
+
+/* --- pulsanti grandi del computer --- */
+
+.schermo .numeri {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.schermo .pulsante {
+  min-width: 7rem;
+  padding: 1rem 2rem;
+  font-size: clamp(1.8rem, 4vw, 3.4rem);
+  background: #000;
+  color: #fff;
+  border: 3px solid #fff;
+  border-radius: 6px;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.schermo .pulsante:hover:not(:disabled),
+.schermo .pulsante:focus-visible {
+  background: #fff;
+  color: #000;
+}
+
+.schermo .pulsante:disabled {
+  opacity: 0.4;
+  cursor: wait;
+}
+
+.schermo .pulsante-pronto {
+  padding-inline: 4rem;
+  letter-spacing: 0.12em;
+}
+
+/* --- sala d'attesa: QR e codice --- */
+
+.schermo .lobby {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4vw;
+  max-width: 90rem;
+}
+
+.schermo .qr {
+  display: block;
+  width: clamp(220px, 40vh, 440px);
+  height: auto;
+  aspect-ratio: 1;
+  background: #fff;
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+
+.schermo .istruzioni {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  align-items: center;
+  max-width: 34rem;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+.schermo .istruzioni p {
+  margin: 0;
+}
+
+.schermo .codice {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  padding-left: 0.25em; /* compensa lo spazio dopo l'ultima lettera, per centrare */
+  line-height: 1.1;
+}
+
+.schermo .indirizzo {
+  font-size: clamp(1.4rem, 2.6vw, 2.4rem);
+  font-weight: 700;
+  word-break: break-all;
+}
+
+/* --- elenco giocatori --- */
+
+.schermo .giocatori {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 44rem);
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
+  text-align: left;
+}
+
+.schermo .giocatori li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+}
+
+.schermo .giocatori .sconosciuto {
+  color: #9a9a9a;
+}
+
+.schermo .giocatori .nome {
+  font-weight: 700;
+}
+
+.schermo .giocatori .scollegato {
+  color: #ffb3b3;
+}
+
+/* --- la storia --- */
+
+.schermo #sc-storia {
+  padding-bottom: 9rem;
+}
+
+.schermo .contenuto-storia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.2rem;
+  max-width: 62rem;
+}
+
+.schermo .contenuto-storia.nuovo {
+  animation: dissolvenza 0.7s ease-out;
+}
+
+.schermo .testo-storia {
+  margin: 0;
+  font-size: clamp(2rem, 4.4vw, 4.2rem);
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.schermo .testo-contesto {
+  margin: 0;
+  font-size: clamp(1.3rem, 2.4vw, 2.2rem);
+  line-height: 1.4;
+  color: #8f8f8f;
+  text-wrap: balance;
+}
+
+.schermo .domanda {
+  margin: 0;
+  font-size: clamp(2rem, 4.2vw, 3.8rem);
+  font-style: italic;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.schermo .chi {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 2.4rem);
+  color: #cfcfcf;
+  text-wrap: balance;
+}
+
+.schermo .chi strong {
+  color: #fff;
+}
+
+.schermo .titolo-combattimento {
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 4.6rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-wrap: balance;
+}
+
+.schermo .barra-scelta {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+  padding: 1.4rem 4vw;
+  background: #000;
+  border-top: 3px solid #fff;
+  font-size: clamp(1.4rem, 2.8vw, 2.6rem);
+}
+
+.schermo .barra-scelta .invito {
+  font-weight: 700;
+}
+
+.schermo .barra-scelta .turno {
+  color: #d8d8d8;
+}
+
+.schermo .suggerimento-fisso {
+  position: fixed;
+  right: 2.5vw;
+  bottom: 1.5vh;
+  margin: 0;
+  font-size: 1.15rem;
+  color: #8a8a8a;
+}
+
+.schermo #sc-giocatori .suggerimento-fisso {
+  position: static;
+}
+
+.schermo .banner {
+  position: fixed;
+  inset: 0 0 auto 0;
+  padding: 0.7rem 1rem;
+  text-align: center;
+  font-size: 1.3rem;
+  background: #fff;
+  color: #000;
+}
+
+/* ==========================================================================
+   TELEFONO: notte di montagna, scheda personaggio in ottone
+   ========================================================================== */
+
+body.telefono {
+  background: var(--notte);
+  color: var(--nebbia);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.telefono .contenitore {
+  width: 100%;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 1.1rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+  padding-top: calc(1.1rem + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.telefono .con-barra-azione {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+.telefono h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.telefono h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.telefono p {
+  margin: 0;
+}
+
+.telefono .spenta {
+  color: var(--nebbia-spenta);
+}
+
+.telefono .errore {
+  color: var(--errore);
+}
+
+.telefono .banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  background: var(--ottone);
+  color: var(--notte);
+}
+
+/* --- campi e pulsanti --- */
+
+.telefono input,
+.telefono textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 1.1rem; /* almeno 16px: così iPhone non ingrandisce la pagina da solo */
+  color: var(--nebbia);
+  background: var(--roccia);
+  border: 2px solid var(--bordo);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+}
+
+.telefono input:focus,
+.telefono textarea:focus {
+  border-color: var(--ottone);
+  outline: none;
+}
+
+.telefono textarea {
+  min-height: 8.5rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.telefono input.codice-stanza {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.telefono .primario {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--notte);
+  background: var(--ottone);
+  border: 0;
+  border-radius: 10px;
+}
+
+.telefono .primario:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.telefono .contatore {
+  text-align: right;
+  font-size: 0.9rem;
+  color: var(--nebbia-spenta);
+}
+
+.telefono .barra-azione {
+  position: fixed;
+  inset: auto 0 0 0;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: var(--notte);
+  border-top: 1px solid var(--bordo);
+}
+
+.telefono .barra-azione > * {
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+/* --- le quattro classi --- */
+
+.telefono .classi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.telefono .carta-classe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.7rem 0.2rem;
+  background: var(--roccia);
+  border: 2px solid var(--bordo);
+  border-radius: 14px;
+  font-size: 0.85rem;
+}
+
+.telefono .carta-classe .simbolo {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.telefono .carta-classe[aria-pressed='true'] {
+  border-color: var(--ottone);
+  background: #33485f;
+}
+
+/* --- la scheda del personaggio --- */
+
+.telefono .scheda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem;
+  background: var(--roccia);
+  border: 2px solid var(--ottone);
+  border-radius: 4px 24px 4px 24px;
+}
+
+.telefono .scheda-testa {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.telefono .emblema {
+  display: grid;
+  place-items: center;
+  width: 4.6rem;
+  height: 4.6rem;
+  font-size: 2.6rem;
+  background: var(--notte);
+  border: 2px solid var(--ottone);
+  border-radius: 50%;
+}
+
+.telefono .nome-giocatore {
+  min-width: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.telefono .scheda input {
+  text-align: right;
+}
+
+.telefono .classe-nome {
+  font-size: 1.6rem;
+}
+
+.telefono .statistiche {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.telefono .stat {
+  display: grid;
+  grid-template-columns: 5.6rem 1fr 1.6rem;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.telefono .stat dt {
+  color: var(--nebbia-spenta);
+}
+
+.telefono .stat dd {
+  display: contents;
+  margin: 0;
+}
+
+.telefono .stat b {
+  text-align: right;
+}
+
+.telefono .barra {
+  display: block;
+  height: 0.65rem;
+  background: var(--notte);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.telefono .barra > span {
+  display: block;
+  height: 100%;
+  width: calc(var(--valore, 0) * 10%);
+  background: var(--muschio);
+  border-radius: 99px;
+}
+
+.telefono .equipaggiamento {
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--bordo);
+}
+
+.telefono .equipaggiamento strong {
+  display: block;
+  color: var(--ottone);
+}
+
+.telefono .tesoro {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--nebbia-spenta);
+}
+
+/* --- messaggi di stato --- */
+
+.telefono .messaggio {
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.15rem;
+  background: var(--roccia);
+  border-radius: 12px;
+}
+
+.telefono .messaggio.attenzione {
+  border: 2px solid var(--ottone);
+}
+
+.telefono .domanda {
+  font-size: 1.35rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.telefono .turno-tuo {
+  padding: 1rem;
+  background: var(--roccia);
+  border: 2px solid var(--ottone);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* ==========================================================================
+   Chi preferisce meno movimento
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .schermo .contenuto-storia.nuovo {
+    animation: none;
+  }
+  .schermo .pulsante {
+    transition: none;
+  }
+}

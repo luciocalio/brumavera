@@ -1,0 +1,9 @@
+# Facoltativo: descrive il servizio per Render (hosting gratuito che regge i collegamenti in tempo reale).
+services:
+  - type: web
+    name: brumavera
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
