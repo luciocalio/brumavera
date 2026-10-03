@@ -167,6 +167,12 @@ describe('una partita intera', () => {
           'avanzamento del turno',
         );
       } else {
+        if (vista.tipo === 'combattimento') {
+          assert.equal((await chiedi(schermo, 'schermo:avanti')).ok, false); // prima bisogna vincere
+          assert.equal((await chiedi(telefono1, 'schermo:salta')).ok, false); // e solo il computer può saltare
+          assert.equal((await chiedi(schermo, 'schermo:salta')).ok, true);
+          await aspetta(() => schermo.ultimoStato.vista.fase === 'vittoria', 'vittoria');
+        }
         const precedente = JSON.stringify(schermo.ultimoStato.vista);
         const esito = await chiedi(schermo, 'schermo:avanti');
         assert.equal(esito.ok, true, `avanti rifiutato: ${JSON.stringify({ esito, fase: schermo.ultimoStato.fase, vista })}`);

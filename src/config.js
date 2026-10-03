@@ -17,4 +17,6 @@ export const config = Object.freeze({
   intervalloPuliziaMs: 5 * 60 * 1000,
   // Freno anti-spam: messaggi al secondo accettati da ogni singolo collegamento
   maxEventiAlSecondo: numero(process.env.MAX_EVENTI_AL_SECONDO, 40),
+  // La leva dei telefoni manda molti messaggi: ha un freno tutto suo
+  maxInputAlSecondo: numero(process.env.MAX_INPUT_AL_SECONDO, 60),
 });

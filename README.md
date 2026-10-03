@@ -3,7 +3,7 @@
 Gioco di avventura cooperativo per 1-4 giocatori.
 Il **computer** è lo schermo (sottotitoli bianchi su nero), i **telefoni** sono i controller. Nessuna app da installare: i telefoni usano il browser.
 
-Questa è la **Tappa 1**: una storia di circa 30 minuti, solo sottotitoli, con i due combattimenti ancora segnati come pagine segnaposto.
+Questa è la versione con il **combattimento (prototipo)**: la storia di circa 30 minuti con i **due combattimenti veri**. Sul computer l'arena è in 3D, **in prima persona e a schermo diviso** (una vista per giocatore); sul telefono, tenuto in orizzontale, compaiono una leva e quattro pulsanti. Per ora tutti combattono con il **guerriero**, contro nemici fatti di cubetti.
 
 ```
    TELEFONI (1-4)             SERVER                 COMPUTER
@@ -83,7 +83,12 @@ Per spegnere il gioco: nel terminale premi **Ctrl + C**.
                                                all'ultimo) scrivi cosa fai
  7. Il narratore mostra il risultato
     per ogni giocatore                      -> guarda lo schermo
- 8. FINE -> "Gioca di nuovo"
+ 8. COMBATTIMENTO: lo schermo diventa
+    l'arena 3D e dice "Girate i telefoni   -> gira il telefono in ORIZZONTALE:
+    in orizzontale"                           a sinistra la leva, a destra i pulsanti
+ 9. Vinto lo scontro: VITTORIA, poi
+    click o Spazio per continuare
+10. FINE -> "Gioca di nuovo"
 ```
 
 Trucchi:
@@ -91,6 +96,41 @@ Trucchi:
 - Sul telefono, per rispondere a voce, tocca il **microfono della tastiera** (dettatura). Il microfono dentro il gioco arriverà più avanti.
 - Se un telefono si ricarica o perde la connessione, torna da solo al suo posto.
 - Se il computer ricarica la pagina, riprende la partita dallo stesso punto.
+
+### Il combattimento
+
+```
+ TELEFONO IN ORIZZONTALE
+ +---------------------------+---------------------------+
+ |  vita ♥♥♥♥♥♥♥♥♥♥          |           [FORTE]         |
+ |                           |                           |
+ |   LEVA (metà sinistra):   |   [MIRA]          [SCHIVA]|
+ |   appoggia il pollice     |                           |
+ |   dove vuoi e muovilo     |           [COLPO]         |
+ +---------------------------+---------------------------+
+```
+
+| Comando | Cosa fa |
+|---|---|
+| Leva su / giù | avanti verso il nemico puntato / indietro |
+| Leva destra / sinistra | gira intorno al nemico |
+| **COLPO** (basso) | colpo veloce, poco danno (1) |
+| **FORTE** (alto) | colpo lento ma potente (3 di danno); è l'unico che ferma il Guardiano |
+| **SCHIVA** (destra) | scatto con qualche istante di invulnerabilità; poi serve una breve ricarica |
+| **MIRA** (sinistra) | passa al nemico successivo |
+
+Regole da sapere:
+- **Il personaggio si gira da solo verso il nemico puntato** (come il "blocco bersaglio" di Dark Souls): non c'è un comando per guardarsi intorno. Il cerchio colorato a terra mostra chi stai puntando.
+- **I nemici si "caricano" prima di colpire**: cambiano colore e sul pavimento compare la zona rossa che sta per essere colpita. Chi si sposta o schiva in tempo non si fa male.
+- Lo scontro parte solo quando **tutti i telefoni sono in orizzontale**. Un telefono scollegato non blocca la partita.
+- Se cadono tutti i giocatori, lo scontro **ricomincia da capo** dopo 4 secondi.
+- Un pulsante premuto un attimo troppo presto parte lo stesso (come in tutti i giochi d'azione).
+- Il telefono vibra quando prendi un colpo.
+- Sui telefoni Android il primo tocco prova a mettere lo schermo intero e a bloccare l'orientamento; su iPhone basta girare il telefono a mano.
+
+**Provare solo i combattimenti** (senza rifare tutta la storia): nella schermata iniziale del computer spunta *"Prova solo i combattimenti"* prima di scegliere i giocatori. In questa modalità, durante lo scontro, il tasto **S** lo salta.
+
+Più giocatori = viste più piccole: 1 giocatore schermo intero, 2 metà e metà, 3 e 4 quattro quarti (con 3, il quarto libero mostra la mappa).
 
 ### Le classi
 
@@ -147,6 +187,9 @@ Nota sul piano gratuito: se nessuno lo usa per un po', il servizio "dorme" e il 
 |---|---|
 | Testi della storia, scelte, risultati per classe | `src/dati/storia.js` |
 | Classi, statistiche, equipaggiamento | `src/dati/classi.js` |
+| **Bilanciamento**: velocità, danni, tempi di schivata, vita del guerriero, durata del conto | `src/dati/regoleCombattimento.js` |
+| **Nemici**: vita, velocità, attacchi, tempo di preavviso, colori | `src/dati/nemici.js` |
+| **Quali nemici in quale scontro** | `incontro` dentro `src/dati/storia.js` |
 | Colori e aspetto | `public/css/stile.css` |
 
 La storia è controllata all'avvio: se dimentichi un pezzo (per esempio il risultato di una classe), il gioco non parte e ti dice esattamente cosa manca.
@@ -159,6 +202,7 @@ Impostazioni facoltative (variabili d'ambiente):
 | `PUBLIC_URL` | indirizzo da mettere nel QR, se quello automatico è sbagliato | automatico |
 | `MAX_STANZE` | quante partite insieme | 50 |
 | `INATTIVITA_MINUTI` | dopo quanti minuti una partita ferma viene eliminata | 360 |
+| `MAX_INPUT_AL_SECONDO` | freno anti-spam sui messaggi della leva (ogni telefono ne manda circa 20 al secondo) | 60 |
 
 ---
 
@@ -168,7 +212,9 @@ Impostazioni facoltative (variabili d'ambiente):
 npm test
 ```
 
-Prova in pochi secondi: la logica del gioco, il collegamento in tempo reale, e le due pagine (computer e telefono) con una partita intera simulata. Se un test fallisce, il messaggio dice cosa non va.
+Prova in pochi secondi (circa 25): le regole del combattimento (colpi, schivata, nemici, vittoria, sconfitta), la logica del gioco, il collegamento in tempo reale, e le pagine di computer e telefono con una partita intera simulata. Se un test fallisce, il messaggio dice cosa non va.
+
+I test **non possono controllare l'aspetto del 3D** (il finto browser non ha la grafica): per quello conviene giocare. Durante lo sviluppo la grafica è stata controllata anche con un browser vero in modalità automatica (schermate e tocchi simulati).
 
 ---
 
@@ -179,6 +225,8 @@ brumavera/
 ├── server.js                 avvio del server
 ├── src/
 │   ├── stanza.js             TUTTA la logica del gioco (fasi, turni, storia)
+│   ├── combattimento.js      le regole dello scontro (puro: niente rete né grafica)
+│   ├── ciclo.js              30 volte al secondo fa avanzare gli scontri e manda lo stato
 │   ├── socket.js             collega i messaggi in tempo reale alla logica
 │   ├── gestoreStanze.js      elenco delle partite aperte e pulizia
 │   ├── app.js                pagine web e sicurezza del browser
@@ -187,12 +235,20 @@ brumavera/
 │   ├── config.js             impostazioni
 │   └── dati/
 │       ├── storia.js         la storia
-│       └── classi.js         le classi
+│       ├── classi.js         le classi
+│       ├── regoleCombattimento.js   i numeri del bilanciamento
+│       └── nemici.js         il catalogo dei nemici
 ├── public/
 │   ├── schermo.html          pagina del computer
 │   ├── telefono.html         pagina del telefono
 │   ├── css/stile.css
-│   └── js/                   schermo.js, telefono.js, comune.js
+│   ├── js/                   schermo.js, telefono.js, comune.js
+│   │   ├── controller.js     leva e pulsanti del telefono
+│   │   ├── arena.js          regista dell'arena sul computer
+│   │   ├── arena3d.js        la scena 3D (three.js, schermo diviso)
+│   │   ├── arena-hud.js      vita, messaggi e mappa sopra il 3D
+│   │   └── arena-logica.js   calcoli senza grafica (riquadri, animazioni)
+│   └── vendor/three/         la libreria 3D, inclusa nel progetto (funziona anche senza internet)
 └── test/                     test automatici
 ```
 
@@ -200,6 +256,10 @@ Scelte importanti:
 - **Il server decide tutto.** Computer e telefoni mostrano soltanto ciò che il server dice, quindi dopo un ricaricamento tutto si ritrova al suo posto.
 - **Solo il computer fa avanzare la storia.** I telefoni non possono, nemmeno volendo.
 - **Il testo dei giocatori non è mai trattato come codice**, quindi nomi e risposte strane non rompono nulla.
+- **Nel combattimento il server è l'arbitro**: il telefono dice solo "spingo la leva così" e "ho premuto questo"; posizioni, colpi e danni li calcola il server 30 volte al secondo. Nessuno può barare dal telefono e tutti vedono la stessa cosa.
+- **Il computer riceve il mondo intero, il telefono solo vita e ricarica**: così il telefono resta leggero anche con i dati mobili.
+- **I nemici sono dati, non codice**: l'IA narratrice, più avanti, potrà dire solo "3 lupi" e le regole restano quelle di `src/dati/nemici.js`.
+- Con i **dati mobili** la leva ha un po' di ritardo (circa 50-150 ms): giocabile, ma meno scattante del Wi-Fi o dell'hotspot.
 
 ---
 
@@ -208,9 +268,14 @@ Scelte importanti:
 | Tappa | Contenuto | Stato |
 |---|---|---|
 | 1 | Collegamento telefoni, personaggi, sottotitoli, scelte a turno | **Fatta** |
-| 2 | Voce del narratore, sfondi, suoni | da fare |
-| 3 | I due combattimenti (telefono in orizzontale) | da fare |
-| 4 | Monete, punti abilità, miglioramenti | da fare |
-| 5 | IA che crea e adatta la storia | da fare |
+| 2 | Combattimento: arena 3D a schermo diviso, leva e pulsanti sul telefono | **Prototipo (questa versione)**: solo guerriero, solo cubetti |
+| 3 | Monete, punti abilità, miglioramenti (le ricompense sono già nel catalogo nemici, non ancora assegnate) | da fare |
+| 4 | IA narratrice: crea storie e ambientazioni usando i nemici del catalogo | da fare |
+| 5 | Voce del narratore, sfondi generati, suoni | da fare |
+| 6 | Personalizzazione (razze, altre classi), campagne che si riprendono | da fare |
 
-Limite attuale (voluto): il gioco **non capisce** cosa scrivono i giocatori. Il testo compare sullo schermo, ma il risultato dipende dalla classe. La comprensione del testo arriva con l'IA, alla Tappa 5.
+Limiti attuali (voluti): il gioco **non capisce** cosa scrivono i giocatori (il testo compare sullo schermo, ma il risultato dipende dalla classe), e nel combattimento tutti usano il **guerriero**: scudiere, mago e arciere avranno mosse proprie più avanti.
+
+## 10. Aggiornare la libreria 3D
+
+`public/vendor/three/` contiene three.js già pronto (versione r186, licenza MIT): non serve internet per giocare. Per aggiornarla vedi `public/vendor/three/LEGGIMI.txt`.

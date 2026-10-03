@@ -2,6 +2,7 @@
 // Come per il computer, non decide nulla: mostra quello che dice il server.
 
 import { caricaClassi, chiedi, el, memoria, riempi } from './comune.js';
+import { creaController } from './controller.js';
 
 const CHIAVE_SESSIONE = 'brumavera:giocatore';
 const LUNGHEZZA_CODICE = 4;
@@ -19,6 +20,8 @@ let mio = null; // { codice, token, indice }: il mio posto nella partita
 let bozza = { classe: null, nome: '' }; // quello che sto scegliendo prima di confermare
 let testoScelta = ''; // quello che sto scrivendo nel momento di scelta
 let chiaveMostrata = ''; // serve a non ridisegnare la pagina (e perdere il testo) per nulla
+let controller = null; // la leva e i pulsanti, attivi solo durante i combattimenti
+let ultimoIo = null; // ultimo stato in tempo reale del combattimento (vita, ricarica schivata)
 
 const normalizzaCodice = (testo) =>
   String(testo ?? '')
@@ -257,10 +260,31 @@ function disegnaPartita() {
   riempi(app, messaggioDiStato(), messaggiAggiuntivi(), schedaPersonaggio(io.classe, { nome: io.nome, modificabile: false }));
 }
 
+function chiudiController() {
+  if (!controller) return;
+  controller.distruggi();
+  controller = null;
+  ultimoIo = null;
+  chiaveMostrata = ''; // la schermata normale va ridisegnata da capo
+}
+
+/** Durante un combattimento il telefono diventa un controller. */
+function disegnaCombattimento(io) {
+  if (!controller) {
+    controller = creaController({ socket, radice: app, nomeGiocatore: io.nome, indice: mio.indice });
+    app.classList.remove('con-barra-azione');
+    if (ultimoIo) controller.aggiornaIo(ultimoIo);
+  }
+  controller.aggiornaVista(stato.vista);
+}
+
 function disegna() {
   if (!stato || !mio) return;
   const io = stato.giocatori[mio.indice];
   if (!io) return;
+
+  if (stato.fase === 'storia' && stato.vista?.tipo === 'combattimento') return disegnaCombattimento(io);
+  chiudiController();
 
   const primaDellaPartita = stato.fase === 'lobby' || stato.fase === 'creazione';
   const eMioTurno = stato.vista?.tipo === 'scelta' && stato.vista.turnoIndice === mio.indice;
@@ -282,6 +306,7 @@ function disegna() {
   else disegnaPartita();
 
   if (eMioTurno) navigator.vibrate?.(200); // un piccolo "tocca a te"
+  return undefined;
 }
 
 // ------------------------------------------------------------------ collegamento al server
@@ -298,6 +323,7 @@ async function entra(codice, token) {
     const io = stato.giocatori[mio.indice];
     if (io?.classe && !bozza.classe) bozza.classe = io.classe;
     disegna();
+    controller?.inviaOrientamento(); // dopo una riconnessione il server non sa più com'è girato il telefono
     return;
   }
 
@@ -352,7 +378,13 @@ socket.on('stato', (nuovoStato) => {
   disegna();
 });
 
+socket.on('combattimento:io', (nuovo) => {
+  ultimoIo = nuovo;
+  controller?.aggiornaIo(nuovo);
+});
+
 socket.on('stanza:chiusa', () => {
+  chiudiController();
   memoria.cancella(CHIAVE_SESSIONE);
   mio = null;
   stato = null;

@@ -13,13 +13,15 @@ export class GestoreStanze {
   #maxStanze;
   #inattivitaMassimaMs;
   #ora;
+  #opzioniStanza;
 
-  constructor({ storia, classi, maxStanze, inattivitaMassimaMs, ora = Date.now }) {
+  constructor({ storia, classi, maxStanze, inattivitaMassimaMs, ora = Date.now, opzioniStanza = {} }) {
     this.#storia = storia;
     this.#classi = classi;
     this.#maxStanze = maxStanze;
     this.#inattivitaMassimaMs = inattivitaMassimaMs;
     this.#ora = ora;
+    this.#opzioniStanza = opzioniStanza; // es. { contoSecondi, rng }: servono ai test
   }
 
   get quante() {
@@ -37,7 +39,15 @@ export class GestoreStanze {
     throw new Error('Impossibile generare un codice stanza libero.');
   }
 
-  crea(maxGiocatori) {
+  /** Tutte le stanze aperte (il ciclo del combattimento le scorre 30 volte al secondo). */
+  tutte() {
+    return this.#stanze.values();
+  }
+
+  /**
+   * @param prova se true la storia contiene solo i combattimenti: serve a provarli senza rifare tutta l'avventura
+   */
+  crea(maxGiocatori, { prova = false } = {}) {
     if (!numeroGiocatoriValido(maxGiocatori)) {
       return { ok: false, errore: `Il numero di giocatori deve essere da ${LIMITI.giocatoriMin} a ${LIMITI.giocatoriMax}.` };
     }
@@ -49,12 +59,18 @@ export class GestoreStanze {
     const stanza = new Stanza({
       codice: this.#generaCodice(),
       maxGiocatori,
-      storia: this.#storia,
+      storia: prova ? this.#storiaDiProva() : this.#storia,
       classi: this.#classi,
       ora: this.#ora,
+      prova,
+      ...this.#opzioniStanza,
     });
     this.#stanze.set(stanza.codice, stanza);
     return { ok: true, stanza };
+  }
+
+  #storiaDiProva() {
+    return [...this.#storia.filter((m) => m.tipo === 'combattimento'), { tipo: 'fine' }];
   }
 
   trova(codice) {

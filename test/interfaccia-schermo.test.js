@@ -130,18 +130,29 @@ describe('pagina del computer', () => {
     await aspetta(() => document.getElementById('banner').hidden, 'avviso sparito');
     await aspetta(() => visibile('sc-storia') && testoStoria() === paginaPrima, 'storia ripresa nello stesso punto');
 
-    // G + resto della storia: combattimenti-segnaposto inclusi, fino alla fine
+    // G + resto della storia: i due combattimenti vanno vinti (qui il computer li salta) e poi si prosegue
     let combattimentiVisti = 0;
     for (let i = 0; i < 200 && !visibile('sc-fine'); i += 1) {
       const vista = telefoni[0].ultimoStato.vista;
       if (vista?.tipo === 'scelta') {
         await chiedi(telefoni[vista.turnoIndice], 'giocatore:scelta', { testo: 'ok' });
         await pausa(60);
+      } else if (vista?.tipo === 'combattimento') {
+        combattimentiVisti += 1;
+        await aspetta(() => visibile('sc-arena'), 'arena');
+        assert.equal(visibile('sc-storia'), false);
+        assert.match(document.querySelector('.arena-msg-titolo').textContent, /Girate i telefoni/);
+        assert.match(document.querySelector('.arena-msg-sotto').textContent, /Luca|<b>Luca<\/b>/);
+        // Un click durante lo scontro non salta nulla
+        document.getElementById('sc-arena').click();
+        await pausa(PAUSA_TRA_CLICK_MS);
+        assert.equal(telefoni[0].ultimoStato.vista.tipo, 'combattimento');
+        assert.ok((await chiedi(clientSchermo, 'schermo:salta')).ok);
+        await aspetta(() => /VITTORIA/.test(document.querySelector('.arena-msg-titolo').textContent), 'vittoria');
+        document.getElementById('sc-arena').click();
+        await pausa(PAUSA_TRA_CLICK_MS);
+        await aspetta(() => !telefoni[0].ultimoStato.vista || telefoni[0].ultimoStato.vista.tipo !== 'combattimento' || telefoni[0].ultimoStato.vista.titolo !== vista.titolo, 'fine del combattimento');
       } else {
-        if (document.querySelector('#contenuto-storia .titolo-combattimento')) {
-          combattimentiVisti += 1;
-          assert.match(testoStoria(), /prossima tappa/);
-        }
         await clickStoria();
       }
     }

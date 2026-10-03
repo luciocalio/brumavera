@@ -27,6 +27,10 @@
           <button type="button" class="pulsante" data-n="4">4</button>
         </div>
         <p id="errore-creazione" class="errore" role="alert" hidden></p>
+        <label class="opzione-prova">
+          <input type="checkbox" id="modo-prova" />
+          <span>Prova solo i combattimenti (salta la storia)</span>
+        </label>
         <p class="suggerimento-fisso">Premi F per lo schermo intero</p>
       </section>
 
@@ -61,6 +65,12 @@
           <span id="turno" class="turno"></span>
         </div>
         <p id="suggerimento" class="suggerimento-fisso">Clic o Spazio per continuare</p>
+      </section>
+
+      <!-- Combattimento: arena 3D a schermo diviso (una vista in prima persona per giocatore) -->
+      <section id="sc-arena" class="schermata-arena" hidden>
+        <div id="arena-canvas-zona" class="arena-canvas-zona"></div>
+        <div id="arena-hud" class="arena-hud"></div>
       </section>
 
       <!-- H. Fine -->

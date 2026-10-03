@@ -25,6 +25,7 @@ function stanzaPronta(classi = ['guerriero', 'mago']) {
 function avanzaFinoA(stanza, tipoVista) {
   for (let i = 0; i < 200; i += 1) {
     if (stanza.snapshot().vista?.tipo === tipoVista) return;
+    if (stanza.snapshot().vista?.tipo === 'combattimento') stanza.saltaCombattimento();
     assert.ok(stanza.avanti().ok, 'avanti() non doveva fallire');
   }
   assert.fail(`Non si arriva mai a una vista "${tipoVista}"`);
@@ -187,14 +188,18 @@ describe('storia e turni', () => {
     assert.equal(stanza.snapshot().vista.tipo, 'pagina');
   });
 
-  it('i combattimenti sono pagine segnaposto e la storia prosegue', () => {
+  it('i combattimenti vanno vinti (qui saltati) e poi la storia prosegue', () => {
     const { stanza, giocatori } = stanzaPronta(['guerriero']);
     stanza.avanti();
     // Percorre tutta la storia rispondendo alle scelte e contando i combattimenti
     let combattimenti = 0;
     for (let i = 0; i < 300 && stanza.fase === FASI.STORIA; i += 1) {
       const vista = stanza.snapshot().vista;
-      if (vista.tipo === 'combattimento') combattimenti += 1;
+      if (vista.tipo === 'combattimento') {
+        combattimenti += 1;
+        assert.equal(stanza.avanti().ok, false); // finché non si vince non si va avanti
+        assert.ok(stanza.saltaCombattimento().ok);
+      }
       if (vista.tipo === 'scelta') stanza.inviaScelta(giocatori[0].token, 'ok');
       else assert.ok(stanza.avanti().ok);
     }
@@ -206,6 +211,7 @@ describe('storia e turni', () => {
     stanza.avanti();
     for (let i = 0; i < 500 && stanza.fase === FASI.STORIA; i += 1) {
       const vista = stanza.snapshot().vista;
+      if (vista.tipo === 'combattimento') stanza.saltaCombattimento();
       if (vista.tipo === 'scelta') stanza.inviaScelta(giocatori[vista.turnoIndice].token, `risposta ${i}`);
       else assert.ok(stanza.avanti().ok);
     }

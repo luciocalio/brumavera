@@ -2,13 +2,15 @@
 // Non decide nulla da sola: mostra quello che dice il server e gli manda i click ("avanti").
 
 import { caricaClassi, chiedi, el, memoria, mostraSolo, riempi } from './comune.js';
+import { creaArena } from './arena.js';
 
-const SCHERMATE = ['sc-caricamento', 'sc-giocatori', 'sc-lobby', 'sc-creazione', 'sc-storia', 'sc-fine'];
+const SCHERMATE = ['sc-caricamento', 'sc-giocatori', 'sc-lobby', 'sc-creazione', 'sc-storia', 'sc-arena', 'sc-fine'];
 const CHIAVE_SESSIONE = 'brumavera:schermo';
 const PAUSA_TRA_DUE_AVANTI_MS = 300;
 
 const $ = (id) => document.getElementById(id);
 const socket = window.io();
+const arena = creaArena({ contenitore: $('sc-arena'), socket });
 
 let stato = null; // ultimo stato ricevuto dal server
 let ingresso = null; // QR e indirizzo per i telefoni
@@ -93,12 +95,6 @@ function contenutoDellaVista(vista) {
     case 'pagina':
       return [el('p', { classe: 'testo-storia', testo: vista.testo })];
 
-    case 'combattimento':
-      return [
-        el('p', { classe: 'titolo-combattimento', testo: vista.titolo }),
-        el('p', { classe: 'testo-contesto', testo: 'Il combattimento sarà aggiunto nella prossima tappa.' }),
-      ];
-
     case 'scelta':
       return [
         vista.contesto && el('p', { classe: 'testo-contesto', testo: vista.contesto }),
@@ -147,6 +143,15 @@ function disegna() {
   if (!stato) return;
   if (stato.fase !== 'storia') chiaveStoria = '';
 
+  // Durante un combattimento si vede l'arena 3D; in ogni altro momento l'arena si spegne.
+  if (stato.fase === 'storia' && stato.vista?.tipo === 'combattimento') {
+    chiaveStoria = '';
+    mostraSolo('sc-arena', SCHERMATE);
+    arena.mostra(stato);
+    return;
+  }
+  arena.nascondi();
+
   switch (stato.fase) {
     case 'lobby':
       return disegnaLobby();
@@ -168,7 +173,8 @@ async function creaPartita(numero) {
   impostaPulsantiNumeri(false);
   $('errore-creazione').hidden = true;
 
-  const risposta = await chiedi(socket, 'schermo:crea', { maxGiocatori: numero });
+  const prova = $('modo-prova').checked;
+  const risposta = await chiedi(socket, 'schermo:crea', { maxGiocatori: numero, prova });
   if (!risposta.ok) return mostraSceltaGiocatori(risposta.errore);
 
   memoria.salva(CHIAVE_SESSIONE, { codice: risposta.codice, tokenSchermo: risposta.tokenSchermo });
@@ -178,7 +184,10 @@ async function creaPartita(numero) {
 }
 
 async function avanti() {
-  const puoAvanzare = stato?.fase === 'storia' && stato.vista && stato.vista.tipo !== 'scelta';
+  const nelCombattimento = stato?.vista?.tipo === 'combattimento';
+  // Nel combattimento si va avanti solo dopo la vittoria (il server comunque non lascerebbe fare altro).
+  const puoAvanzare =
+    stato?.fase === 'storia' && stato.vista && stato.vista.tipo !== 'scelta' && (!nelCombattimento || stato.vista.fase === 'vittoria');
   if (!puoAvanzare) return;
 
   const adesso = performance.now();
@@ -263,12 +272,19 @@ document.querySelectorAll('[data-n]').forEach((pulsante) => {
 $('pronto').addEventListener('click', premiPronto);
 $('rigioca').addEventListener('click', giocaDiNuovo);
 $('sc-storia').addEventListener('click', avanti);
+$('sc-arena').addEventListener('click', avanti);
 
 document.addEventListener('keydown', (evento) => {
   // Ignoro il tasto tenuto premuto (ripete decine di volte al secondo) e le combinazioni.
   if (evento.repeat || evento.ctrlKey || evento.metaKey || evento.altKey) return;
 
   if (evento.key === 'f' || evento.key === 'F') return schermoIntero();
+
+  // Solo in modalità prova: S salta il combattimento (serve a provare la storia senza combattere).
+  if ((evento.key === 's' || evento.key === 'S') && stato?.prova && stato.vista?.tipo === 'combattimento') {
+    chiedi(socket, 'schermo:salta');
+    return undefined;
+  }
 
   if (evento.code === 'Space' || evento.key === 'Enter') {
     // Se è selezionato un pulsante (es. PRONTO), ci pensa lui.

@@ -5,6 +5,9 @@ import express from 'express';
 import { Server } from 'socket.io';
 import { registraSocket } from './socket.js';
 import { CLASSI, STATISTICHE, VALORI_INIZIALI } from './dati/classi.js';
+import { ARENA, GUERRIERO, TEMPI } from './dati/regoleCombattimento.js';
+import { NEMICI } from './dati/nemici.js';
+import { creaCiclo } from './ciclo.js';
 
 const cartellaPubblica = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
@@ -38,6 +41,9 @@ export function creaServer({ gestore, config, ipLan }) {
   // Dati delle classi: la fonte è un solo file (src/dati/classi.js)
   app.get('/api/classi', (req, res) => res.json({ classi: CLASSI, statistiche: STATISTICHE, valoriIniziali: VALORI_INIZIALI }));
 
+  // Regole del combattimento: il computer le usa per disegnare l'arena e le zone d'attacco (stessa fonte del server)
+  app.get('/api/combattimento', (req, res) => res.json({ arena: ARENA, guerriero: GUERRIERO, nemici: NEMICI, tempi: TEMPI }));
+
   // Con "root" funziona anche se il progetto sta dentro una cartella che inizia con un punto.
   app.get('/', (req, res) => res.sendFile('schermo.html', { root: cartellaPubblica }));
   app.get('/p', (req, res) => res.sendFile('telefono.html', { root: cartellaPubblica }));
@@ -55,5 +61,10 @@ export function creaServer({ gestore, config, ipLan }) {
   const io = new Server(server, { maxHttpBufferSize: 10_000 });
   registraSocket(io, { gestore, config, ipLan });
 
-  return { app, server, io };
+  // Il ciclo parte con il server e si ferma quando il server si chiude.
+  const ciclo = creaCiclo({ io, gestore });
+  ciclo.avvia();
+  server.on('close', () => ciclo.ferma());
+
+  return { app, server, io, ciclo };
 }

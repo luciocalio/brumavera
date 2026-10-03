@@ -3,8 +3,10 @@
 // manda a tutti lo "stato" aggiornato.
 //
 // Eventi dal COMPUTER:  schermo:crea, schermo:riprendi, schermo:avanti, schermo:chiudi
-// Eventi dal TELEFONO:  giocatore:entra, giocatore:scegliClasse, giocatore:conferma, giocatore:scelta
+// Eventi dal TELEFONO:  giocatore:entra, giocatore:scegliClasse, giocatore:conferma, giocatore:scelta,
+//                       giocatore:input (la leva), giocatore:azione (i pulsanti), giocatore:orizzontale
 // Eventi verso tutti:   stato (lo stato della partita), stanza:chiusa
+// Eventi del combattimento (mandati dal ciclo, vedi ciclo.js): combattimento:stato (computer), combattimento:io (telefono)
 
 import QRCode from 'qrcode';
 import { risolviUrlBase } from './rete.js';
@@ -14,6 +16,8 @@ const errore = (messaggio, extra = {}) => ({ ok: false, errore: messaggio, ...ex
 
 export function registraSocket(io, { gestore, config, ipLan }) {
   const trasmetti = (stanza) => io.to(stanza.codice).emit('stato', stanza.snapshot());
+  // Stato in tempo reale del combattimento: arriva solo ai computer, non ai telefoni.
+  const stanzaSchermi = (codice) => `${codice}:schermo`;
 
   /** Indirizzo e QR code che il computer mostra ai giocatori. */
   async function datiDiIngresso(socket, stanza) {
@@ -74,8 +78,8 @@ export function registraSocket(io, { gestore, config, ipLan }) {
   io.on('connection', (socket) => {
     // ------------------------------------------------------------ COMPUTER
 
-    su(socket, 'schermo:crea', async ({ maxGiocatori }) => {
-      const esito = gestore.crea(maxGiocatori);
+    su(socket, 'schermo:crea', async ({ maxGiocatori, prova }) => {
+      const esito = gestore.crea(maxGiocatori, { prova: prova === true });
       if (!esito.ok) return esito;
 
       const { stanza } = esito;
@@ -83,6 +87,7 @@ export function registraSocket(io, { gestore, config, ipLan }) {
       socket.data.ruolo = 'schermo';
       socket.data.codice = stanza.codice;
       socket.join(stanza.codice);
+      socket.join(stanzaSchermi(stanza.codice));
 
       return {
         ok: true,
@@ -103,6 +108,7 @@ export function registraSocket(io, { gestore, config, ipLan }) {
       socket.data.ruolo = 'schermo';
       socket.data.codice = stanza.codice;
       socket.join(stanza.codice);
+      socket.join(stanzaSchermi(stanza.codice));
       trasmetti(stanza);
 
       return { ok: true, codice: stanza.codice, ...(await datiDiIngresso(socket, stanza)), stato: stanza.snapshot() };
@@ -116,6 +122,14 @@ export function registraSocket(io, { gestore, config, ipLan }) {
       return esito;
     });
 
+    su(socket, 'schermo:salta', () => {
+      const stanza = stanzaDelloSchermo(socket);
+      if (!stanza) return errore('Schermo non collegato a una partita.');
+      const esito = stanza.saltaCombattimento();
+      if (esito.ok) trasmetti(stanza);
+      return esito;
+    });
+
     su(socket, 'schermo:chiudi', () => {
       const stanza = stanzaDelloSchermo(socket);
       if (!stanza) return errore('Schermo non collegato a una partita.');
@@ -123,6 +137,7 @@ export function registraSocket(io, { gestore, config, ipLan }) {
       gestore.chiudi(codice);
       io.to(codice).emit('stanza:chiusa');
       io.in(codice).socketsLeave(codice);
+      io.in(stanzaSchermi(codice)).socketsLeave(stanzaSchermi(codice));
       socket.data.ruolo = null;
       socket.data.codice = null;
       return { ok: true };
@@ -184,6 +199,37 @@ export function registraSocket(io, { gestore, config, ipLan }) {
       const esito = stanza.inviaScelta(socket.data.token, testo);
       if (esito.ok) trasmetti(stanza);
       return esito;
+    });
+
+    su(socket, 'giocatore:azione', ({ tipo }) => {
+      const stanza = stanzaDelGiocatore(socket);
+      if (!stanza) return errore('Non sei in nessuna stanza.');
+      return stanza.azioneCombattimento(socket.data.token, tipo);
+    });
+
+    su(socket, 'giocatore:orizzontale', ({ orizzontale }) => {
+      const stanza = stanzaDelGiocatore(socket);
+      if (!stanza) return errore('Non sei in nessuna stanza.');
+      const esito = stanza.impostaOrizzontale(socket.data.token, orizzontale);
+      if (esito.ok) trasmetti(stanza);
+      return esito;
+    });
+
+    // La leva manda molti messaggi al secondo: niente risposta e un freno separato dagli altri eventi.
+    socket.on('giocatore:input', (dati) => {
+      const adesso = Date.now();
+      const l = socket.data.limiteInput ?? { inizio: adesso, conteggio: 0 };
+      if (adesso - l.inizio >= 1000) {
+        l.inizio = adesso;
+        l.conteggio = 0;
+      }
+      l.conteggio += 1;
+      socket.data.limiteInput = l;
+      if (l.conteggio > (config.maxInputAlSecondo ?? 60)) return;
+
+      const stanza = stanzaDelGiocatore(socket);
+      if (!stanza || typeof dati?.x !== 'number' || typeof dati?.z !== 'number') return;
+      stanza.impostaInput(socket.data.token, dati.x, dati.z);
     });
 
     // ------------------------------------------------------------ DISCONNESSIONE

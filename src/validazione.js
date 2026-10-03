@@ -1,6 +1,8 @@
 // Funzioni che controllano e puliscono tutto ciò che arriva dalla rete.
 // Regola d'oro: i telefoni sono "ospiti", i loro dati non si considerano mai affidabili.
 
+import { validaIncontro } from './dati/nemici.js';
+
 export const LIMITI = Object.freeze({
   nomeMax: 20,
   sceltaMax: 200,
@@ -55,6 +57,10 @@ export function validaStoria(storia, classi) {
         break;
       case 'combattimento':
         if (!momento.titolo?.trim()) errori.push(`${dove}: combattimento senza titolo.`);
+        {
+          const problema = validaIncontro(momento.incontro);
+          if (problema) errori.push(`${dove}: ${problema}.`);
+        }
         break;
       case 'scelta':
         if (!momento.domanda?.trim()) errori.push(`${dove}: scelta senza domanda.`);

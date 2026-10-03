@@ -127,10 +127,25 @@ describe('pagina del telefono', () => {
           await aspetta(() => schermo.ultimoStato.vista.tipo !== 'scelta', 'scelta chiusa');
         }
       } else {
+        if (vista.tipo === 'combattimento') {
+          // Nel combattimento il telefono diventa un controller (leva + 4 pulsanti); poi il computer salta lo scontro
+          await aspetta(() => document.querySelector('.controller'), 'il controller del combattimento');
+          assert.equal(document.querySelectorAll('.pulsante-azione').length, 4);
+          assert.equal(document.querySelector('.zona-leva') !== null, true);
+          await chiedi(schermo, 'schermo:salta');
+          await aspetta(() => schermo.ultimoStato.vista.fase === 'vittoria', 'vittoria');
+          await aspetta(() => /Vittoria/.test(document.querySelector('.velo')?.textContent ?? ''), 'messaggio di vittoria sul telefono');
+        }
         await chiedi(schermo, 'schermo:avanti');
+        if (vista.tipo === 'combattimento') {
+          // Finito lo scontro il telefono torna alla schermata normale
+          await aspetta(() => !document.querySelector('.controller') || schermo.ultimoStato.vista?.tipo === 'combattimento', 'uscita dal controller');
+        }
       }
     }
     await aspetta(() => testo().includes('La storia è finita'), 'fine della storia');
+    assert.equal(document.querySelector('.controller'), null);
+    assert.equal(document.body.classList.contains('in-combattimento'), false);
 
     // Il computer chiude la partita: il telefono torna alla schermata del codice
     await chiedi(schermo, 'schermo:chiudi');

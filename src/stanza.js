@@ -5,12 +5,14 @@
 //   lobby      -> i telefoni stanno entrando
 //   creazione  -> tutti sono entrati, ognuno sceglie il personaggio
 //   pronto     -> tutti hanno confermato, il computer può premere "PRONTO"
-//   storia     -> la storia va avanti (pagine, scelte, combattimenti-segnaposto)
+//   storia     -> la storia va avanti (pagine, scelte, combattimenti)
 //   fine       -> storia conclusa
 //
 // Il SERVER è l'unica fonte di verità: computer e telefoni si limitano a mostrare lo "snapshot".
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { Combattimento, FASI_COMBATTIMENTO } from './combattimento.js';
+import { NUMERO_MAX_GIOCATORI } from './dati/regoleCombattimento.js';
 import { pulisciNome, pulisciScelta } from './validazione.js';
 
 export const FASI = Object.freeze({
@@ -40,20 +42,28 @@ export class Stanza {
   #tokenSchermo = nuovoToken();
   #schermoSocketId = null;
   #ultimaAttivita;
+  #contoSecondi;
+  #rng;
+  #firmaCombattimento = '';
 
-  constructor({ codice, maxGiocatori, storia, classi, ora = Date.now }) {
+  constructor({ codice, maxGiocatori, storia, classi, ora = Date.now, contoSecondi, rng, prova = false }) {
     this.codice = codice;
     this.maxGiocatori = maxGiocatori;
     this.#storia = storia;
     this.#classi = classi;
     this.#ora = ora;
+    this.prova = prova; // true = storia di prova (solo combattimenti)
+    this.#contoSecondi = contoSecondi;
+    this.#rng = rng;
     this.#ultimaAttivita = ora();
+    if (maxGiocatori > NUMERO_MAX_GIOCATORI) throw new Error('Troppi giocatori per il combattimento.');
 
     this.fase = FASI.LOBBY;
     this.giocatori = []; // l'ordine di arrivo = l'ordine dei turni
     this.cursor = -1; // posizione nella storia
     this.risposte = []; // risposte della scelta corrente, nell'ordine dei giocatori
     this.risultatoIdx = 0; // quale risultato si sta mostrando dopo una scelta
+    this.combattimento = null; // lo scontro in corso (solo nei momenti di tipo "combattimento")
   }
 
   get ultimaAttivita() {
@@ -116,6 +126,7 @@ export class Stanza {
     if (!giocatore) return errore('Posto non trovato in questa stanza.');
     giocatore.connesso = true;
     giocatore.socketId = socketId;
+    this.combattimento?.impostaPresente(giocatore.indice, true);
     this.#tocca();
     return ok({ giocatore });
   }
@@ -126,6 +137,8 @@ export class Stanza {
     if (giocatore && giocatore.socketId === socketId) {
       giocatore.connesso = false;
       giocatore.socketId = null;
+      this.combattimento?.impostaPresente(giocatore.indice, false);
+      this.combattimento?.impostaOrizzontale(giocatore.indice, false);
     }
   }
 
@@ -184,6 +197,9 @@ export class Stanza {
     if (this.fase !== FASI.STORIA) return errore('Non c\'è niente da far avanzare ora.');
 
     const momento = this.#storia[this.cursor];
+    if (momento.tipo === 'combattimento' && this.combattimento?.fase !== FASI_COMBATTIMENTO.VITTORIA) {
+      return errore('Prima bisogna vincere il combattimento.');
+    }
     if (momento.tipo === 'scelta') {
       if (!this.#tuttiHannoRisposto()) return errore('Aspettate che tutti i giocatori rispondano.');
       this.risultatoIdx += 1;
@@ -197,6 +213,8 @@ export class Stanza {
 
   #entraNelMomento(indice) {
     this.cursor = indice;
+    this.combattimento = null;
+    this.#firmaCombattimento = '';
     const momento = this.#storia[indice];
 
     if (!momento || momento.tipo === 'fine') {
@@ -209,6 +227,82 @@ export class Stanza {
       this.risposte = [];
       this.risultatoIdx = 0;
     }
+    if (momento.tipo === 'combattimento') this.#iniziaCombattimento(momento);
+  }
+
+  #iniziaCombattimento(momento) {
+    this.combattimento = new Combattimento({
+      numeroGiocatori: this.giocatori.length,
+      incontro: momento.incontro,
+      ...(this.#contoSecondi !== undefined && { contoSecondi: this.#contoSecondi }),
+      ...(this.#rng && { rng: this.#rng }),
+    });
+    for (const g of this.giocatori) this.combattimento.impostaPresente(g.indice, g.connesso);
+    this.#firmaCombattimento = this.#calcolaFirmaCombattimento();
+  }
+
+  // ---------------------------------------------------------------- combattimento
+
+  #calcolaFirmaCombattimento() {
+    const c = this.combattimento;
+    return c ? `${c.fase}|${c.tentativi}|${c.chiManca().join(',')}` : '';
+  }
+
+  /** Il combattimento è in corso e ha bisogno di essere fatto avanzare nel tempo? */
+  get combattimentoAttivo() {
+    return this.fase === FASI.STORIA && this.combattimento !== null;
+  }
+
+  /**
+   * Fa avanzare il combattimento di `dt` secondi.
+   * Restituisce true se è cambiato qualcosa che va comunicato a tutti (fase, chi deve girare il telefono...).
+   */
+  passo(dt) {
+    if (!this.combattimentoAttivo) return false;
+    this.combattimento.passo(dt);
+    const firma = this.#calcolaFirmaCombattimento();
+    const cambiata = firma !== this.#firmaCombattimento;
+    this.#firmaCombattimento = firma;
+    return cambiata;
+  }
+
+  #giocatoreInCombattimento(token) {
+    const giocatore = this.#trovaPerToken(token);
+    if (!giocatore || !this.combattimentoAttivo) return null;
+    return giocatore;
+  }
+
+  /** La leva del telefono (valori da -1 a 1). Restituisce true se è stata accettata. */
+  impostaInput(token, x, z) {
+    const giocatore = this.#giocatoreInCombattimento(token);
+    if (!giocatore || !Number.isFinite(x) || !Number.isFinite(z)) return false;
+    this.combattimento.impostaInput(giocatore.indice, x, z);
+    this.#tocca();
+    return true;
+  }
+
+  /** Un pulsante del telefono (colpo, colpoForte, schivata, bersaglio). */
+  azioneCombattimento(token, tipo) {
+    const giocatore = this.#giocatoreInCombattimento(token);
+    if (!giocatore) return errore('Adesso non si sta combattendo.');
+    this.#tocca();
+    return this.combattimento.azione(giocatore.indice, tipo) ? ok() : errore('Azione non possibile ora.');
+  }
+
+  /** Il telefono dice se è in orizzontale. Nel combattimento si parte solo quando lo sono tutti. */
+  impostaOrizzontale(token, orizzontale) {
+    const giocatore = this.#giocatoreInCombattimento(token);
+    if (!giocatore) return errore('Adesso non si sta combattendo.');
+    this.combattimento.impostaOrizzontale(giocatore.indice, orizzontale === true);
+    this.#tocca();
+    return ok();
+  }
+
+  /** Per provare la storia senza combattere: il combattimento si considera vinto. */
+  saltaCombattimento() {
+    if (!this.combattimentoAttivo) return errore('Non c\'è nessun combattimento da saltare.');
+    this.combattimento.vinciSubito();
+    return ok();
   }
 
   #tuttiHannoRisposto() {
@@ -243,8 +337,16 @@ export class Stanza {
       case 'pagina':
         return { tipo: 'pagina', testo: momento.testo };
 
-      case 'combattimento':
-        return { tipo: 'combattimento', titolo: momento.titolo };
+      case 'combattimento': {
+        const c = this.combattimento;
+        return {
+          tipo: 'combattimento',
+          titolo: momento.titolo,
+          fase: c?.fase ?? null,
+          tentativo: c?.tentativi ?? 1,
+          chiManca: c ? c.chiManca() : [],
+        };
+      }
 
       case 'scelta': {
         if (!this.#tuttiHannoRisposto()) {
@@ -286,6 +388,7 @@ export class Stanza {
       fase: this.fase,
       maxGiocatori: this.maxGiocatori,
       schermoConnesso: this.schermoConnesso,
+      prova: this.prova,
       giocatori: this.giocatori.map((g) => ({
         indice: g.indice,
         nome: g.nome,

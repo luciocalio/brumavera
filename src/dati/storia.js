@@ -4,7 +4,7 @@
 //   pagina        -> una pagina di sottotitoli
 //   scelta        -> una domanda; ogni giocatore scrive la sua risposta, poi il narratore
 //                    mostra il risultato scritto per la CLASSE di quel giocatore
-//   combattimento -> pagina segnaposto (il combattimento vero arriva nella tappa 3)
+//   combattimento -> uno scontro vero nell'arena; `incontro` dice quali nemici ci sono (vedi src/dati/nemici.js)
 //   fine          -> schermata finale
 //
 // Il campo "scena" servirà in futuro per sfondi e musica: per ora non viene usato.
@@ -48,7 +48,7 @@ export const storia = [
   { tipo: 'pagina', scena: 'bosco', testo: 'Un ululato attraversa il bosco. Poi un altro. Poi molti altri.' },
 
   // ---------- SCENA 3: COMBATTIMENTO 1 ----------
-  { tipo: 'combattimento', scena: 'radura', titolo: 'COMBATTIMENTO 1: I lupi grigi' },
+  { tipo: 'combattimento', scena: 'radura', titolo: 'COMBATTIMENTO 1: I lupi grigi', incontro: [{ nemico: 'lupo', quanti: 3 }] },
   { tipo: 'pagina', scena: 'radura', testo: "L'ultimo lupo fugge nel buio. Nel silenzio sentite, finalmente, il rumore dell'acqua." },
 
   // ---------- SCENA 4: IL FIUME SPEZZATO ----------
@@ -86,7 +86,7 @@ export const storia = [
   { tipo: 'pagina', scena: 'tempio', testo: "Lo sollevate. Appena il cristallo lascia l'altare, il pavimento comincia a tremare." },
 
   // ---------- SCENA 6: COMBATTIMENTO 2 ----------
-  { tipo: 'combattimento', scena: 'sala-guardiano', titolo: 'COMBATTIMENTO 2: Il Guardiano di pietra' },
+  { tipo: 'combattimento', scena: 'sala-guardiano', titolo: 'COMBATTIMENTO 2: Il Guardiano di pietra', incontro: [{ nemico: 'guardiano', quanti: 1 }] },
   { tipo: 'pagina', scena: 'sala-guardiano', testo: 'Il Guardiano si sbriciola in mille pezzi. La sala torna silenziosa. Il cristallo brilla più forte che mai.' },
 
   // ---------- SCENA 7: IL RITORNO DELL'ACQUA ----------
